@@ -1,9 +1,9 @@
 const cacheName = "PM-Studios-FUZE-0.1";
 const contentToCache = [
-    "Build/web.loader.js",
-    "Build/web.framework.js",
-    "Build/web.data",
-    "Build/web.wasm",
+    "Build/webgl1.loader.js",
+    "Build/webgl1.framework.js",
+    "Build/webgl1.data",
+    "Build/webgl1.wasm",
     "TemplateData/style.css"
 
 ];

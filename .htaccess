@@ -1,0 +1,2 @@
+#enable cached data to be read
+Header set Content-Security-Policy "worker-src 'self' blob:; script-src 'self' blob:;"

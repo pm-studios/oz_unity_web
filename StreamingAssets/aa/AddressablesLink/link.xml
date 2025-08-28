@@ -1,8 +1,10 @@
 <linker>
   <assembly fullname="Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
     <type fullname="AvatarDecal" preserve="all" />
+    <type fullname="OZ.AvatarBlendShapeDatas" preserve="all" />
     <type fullname="OZ.PartsData" preserve="all" />
     <type fullname="OZ.PartsColor" preserve="nothing" serialized="true" />
+    <type fullname="OZ.BlendShapeData" preserve="nothing" serialized="true" />
   </assembly>
   <assembly fullname="MagicaClothV2, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
     <type fullname="MagicaCloth2.MagicaCapsuleCollider" preserve="all" />

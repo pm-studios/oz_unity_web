@@ -27,7 +27,7 @@
       <div id="unity-footer">
         <div id="unity-logo-title-footer"></div>
         <div id="unity-fullscreen-button"></div>
-        <div id="unity-build-title">FUZE</div>
+        <div id="unity-build-title">Load Avatar</div>
       </div>
     </div>
 
@@ -142,6 +142,9 @@
           
           document.querySelector("#unity-loading-bar").style.display = "none";
           document.querySelector("#unity-fullscreen-button").onclick = () => {
+            unityInstance.setUserId(1);
+          };
+          document.querySelector("#unity-build-title").onclick = () => {
             unityInstance.SetFullscreen(1);
           };
 
@@ -172,9 +175,6 @@
       };
 
       document.body.appendChild(script);
-
-
-
     </script>
   </body>
 </html>

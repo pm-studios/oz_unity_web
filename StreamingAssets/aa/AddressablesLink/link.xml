@@ -67,7 +67,6 @@
     <type fullname="UnityEngine.Sprite" preserve="all" />
     <type fullname="UnityEngine.Texture2D" preserve="all" />
     <type fullname="UnityEngine.Transform" preserve="all" />
-    <type fullname="UnityEngine.RenderingLayerMask" preserve="nothing" serialized="true" />
   </assembly>
   <assembly fullname="Unity.Mathematics">
     <type fullname="Unity.Mathematics.float3" preserve="nothing" serialized="true" />

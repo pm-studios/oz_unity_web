@@ -12,6 +12,64 @@
         margin: 0 auto;
       }
 
+      .control-panel {
+        margin: 10px auto;
+        max-width: 300px;
+        text-align: center;
+      }
+
+      .input-group {
+        margin: 10px 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+      }
+
+      .input-group input {
+        padding: 5px 8px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        font-size: 14px;
+        width: 80px;
+      }
+
+      .control-button {
+        padding: 6px 12px;
+        background-color: #4CAF50;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 13px;
+        transition: background-color 0.3s;
+      }
+
+      .control-button:hover {
+        background-color: #45a049;
+      }
+
+      .control-button:disabled {
+        background-color: #cccccc;
+        cursor: not-allowed;
+      }
+
+      .toggle-button {
+        background-color: #2196F3;
+      }
+
+      .toggle-button:hover {
+        background-color: #1976D2;
+      }
+
+      .toggle-button.active {
+        background-color: #FF5722;
+      }
+
+      .toggle-button.active:hover {
+        background-color: #E64A19;
+      }
+
     </style>
   </head>
   <body>
@@ -26,16 +84,23 @@
       <div id="unity-warning"> </div>
       <div id="unity-footer">
         <div id="unity-fullscreen-button"></div>
-        <div id="send-message-button">Load Avatar</div>
+      </div>
+      
+      <!-- 컨트롤 패널 - Unity 컴포넌트 하단에 위치 -->
+      <div class="control-panel">
+        <div class="input-group">
+          <input type="number" id="user-id-input" value="5495" min="1" max="999999" placeholder="User ID">
+          <button class="control-button" onclick="setUserId()">Set User ID</button>
+          <button id="setmine-button" class="control-button toggle-button" onclick="toggleSetMine()">SetMine: true</button>
+        </div>
       </div>
     </div>
-
-
 
     <script>
       var canvas = document.querySelector("#unity-canvas");
       var unityInstance = null;
       var isLoaded = false;
+      var isMineActive = true; // SetMine 상태 추적 (초기값: true)
 
       // Unity 캔버스 사이즈 변경 함수
       function changeUnitySize(width, height) {
@@ -63,12 +128,71 @@
         console.log("Unity에서 받은 메시지: OnChangedAvatar", url);
       }
 
-      // Unity로 메시지 보내는 함수
-      function sendMessageToUnity() {
-        if (isLoaded && unityInstance) {
-          unityInstance.SendMessage("System", "SetUserId", 5495);
+      // User ID 설정 함수
+      function setUserId() {
+        if (!isLoaded || !unityInstance) {
+          alert("Unity가 아직 로드되지 않았습니다.");
+          return;
         }
+
+        var userIdInput = document.getElementById("user-id-input");
+        var userId = parseInt(userIdInput.value);
+
+        if (isNaN(userId) || userId < 1) {
+          alert("유효한 User ID를 입력해주세요 (1 이상의 숫자)");
+          return;
+        }
+
+        console.log("Setting User ID:", userId);
+        unityInstance.SendMessage("System", "SetUserId", userId);
+        
+        // 성공 메시지 표시
+        var button = event.target;
+        var originalText = button.textContent;
+        button.textContent = "설정됨!";
+        button.disabled = true;
+        
+        setTimeout(() => {
+          button.textContent = originalText;
+          button.disabled = false;
+        }, 1000);
       }
+
+      // SetMine 토글 함수
+      function toggleSetMine() {
+        if (!isLoaded || !unityInstance) {
+          alert("Unity가 아직 로드되지 않았습니다.");
+          return;
+        }
+
+        // 상태 토글
+        isMineActive = !isMineActive;
+        
+        // 버튼 텍스트와 스타일 업데이트
+        var button = document.getElementById("setmine-button");
+        button.textContent = `SetMine: ${isMineActive}`;
+        
+        if (isMineActive) {
+          button.classList.remove("active");
+        } else {
+          button.classList.add("active");
+        }
+
+        // Unity로 int 값 전송 (true=1, false=0)
+        var mineValue = isMineActive ? 1 : 0;
+        console.log("Setting Mine:", mineValue);
+        unityInstance.SendMessage("System", "SetMine", mineValue);
+      }
+
+      // Enter 키로 User ID 설정
+      document.addEventListener('DOMContentLoaded', function() {
+        var userIdInput = document.getElementById("user-id-input");
+        userIdInput.addEventListener('keypress', function(e) {
+          if (e.key === 'Enter') {
+            setUserId();
+          }
+        });
+      });
 
       // Shows a temporary message banner/ribbon for a few seconds, or
       // a permanent error message on top of the canvas if type=='error'.
@@ -143,9 +267,6 @@
           document.querySelector("#unity-fullscreen-button").onclick = () => {
             unityInstance.SetFullscreen(1);
           };
-          document.querySelector("#send-message-button").onclick = () => {
-            unityInstance.SendMessage("System", "LoadMineAvatar_ForDev", 5495);
-          };
 
           // Unity 이벤트 디스패처 함수 등록
           // Unity .jslib에서 window.dispatchReactUnityEvent를 호출할 때 사용됨
@@ -168,15 +289,18 @@
           };
 
           console.log("Unity 로드 완료. 이벤트 리스너 등록됨.");
+          
+          // 초기 User ID 설정 (자동)
+          setTimeout(() => {
+            setUserId();
+          }, 500);
+          
         }).catch((message) => {
           alert(message);
         });
       };
 
       document.body.appendChild(script);
-
-
-
     </script>
   </body>
 </html>

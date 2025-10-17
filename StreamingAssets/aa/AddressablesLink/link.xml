@@ -3,6 +3,7 @@
     <type fullname="AvatarDecal" preserve="all" />
     <type fullname="OZ.AvatarBlendShapeDatas" preserve="all" />
     <type fullname="OZ.PartsData" preserve="all" />
+    <type fullname="SmoothEyeBlink" preserve="all" />
     <type fullname="OZ.PartsColor" preserve="nothing" serialized="true" />
     <type fullname="OZ.BlendShapeData" preserve="nothing" serialized="true" />
   </assembly>

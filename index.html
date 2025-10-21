@@ -71,6 +71,18 @@
       }
 
     </style>
+    <!-- GIF 생성 라이브러리 추가 -->
+    <script src="https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.js"></script>
+    <!-- GIF 로딩 확인 -->
+    <script>
+        window.addEventListener('load', function() {
+            if (typeof GIF !== 'undefined') {
+                console.log('✓ gif.js loaded successfully');
+            } else {
+                console.error('✗ gif.js failed to load');
+            }
+        });
+    </script>
   </head>
   <body>
     <div id="unity-container" class="unity-desktop">

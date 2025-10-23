@@ -1,6 +1,7 @@
 <linker>
   <assembly fullname="Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
     <type fullname="AvatarDecal" preserve="all" />
+    <type fullname="MaskSphereVisualizer" preserve="all" />
     <type fullname="OZ.AvatarBlendShapeDatas" preserve="all" />
     <type fullname="OZ.PartsData" preserve="all" />
     <type fullname="SmoothEyeBlink" preserve="all" />

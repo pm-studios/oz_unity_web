@@ -7,9 +7,38 @@
     <link rel="shortcut icon" href="TemplateData/favicon.ico">
     <link rel="stylesheet" href="TemplateData/style.css">
     <style>
+      body {
+        margin: 0;
+        padding: 0;
+      }
+
       #unity-canvas {
         display: block;
         margin: 0 auto;
+      }
+
+      /* 컴팩트 모드 스타일 */
+      body.compact-mode {
+        overflow: hidden;
+      }
+
+      body.compact-mode #unity-container {
+        width: 100vw !important;
+        height: 100vh !important;
+        margin: 0 !important;
+        padding: 0 !important;
+      }
+
+      body.compact-mode #unity-canvas {
+        width: 100% !important;
+        height: 100% !important;
+        margin: 0 !important;
+      }
+
+      body.compact-mode .control-panel,
+      body.compact-mode #unity-footer,
+      body.compact-mode #unity-warning {
+        display: none !important;
       }
 
       .control-panel {
@@ -69,7 +98,6 @@
       .toggle-button.active:hover {
         background-color: #E64A19;
       }
-
     </style>
     <!-- GIF 생성 라이브러리 추가 -->
     <script src="https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.js"></script>
@@ -109,6 +137,23 @@
     </div>
 
     <script>
+      // URL 파라미터 체크
+      var urlParams = new URLSearchParams(window.location.search);
+      var isCompactMode = urlParams.get('mode') === 'compact';
+      var urlUserId = urlParams.get('userId'); // userId 파라미터 가져오기
+      var isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+
+      // 컴팩트 모드 또는 모바일이면 body에 클래스 추가
+      if (isCompactMode || isMobile) {
+        document.body.classList.add('compact-mode');
+        console.log('컴팩트 모드 활성화');
+      }
+
+      // userId가 URL에 있으면 input에 설정
+      if (urlUserId) {
+        console.log('URL에서 받은 User ID:', urlUserId);
+      }
+
       var canvas = document.querySelector("#unity-canvas");
       var unityInstance = null;
       var isLoaded = false;
@@ -116,6 +161,12 @@
 
       // Unity 캔버스 사이즈 변경 함수
       function changeUnitySize(width, height) {
+        // 컴팩트 모드에서는 사이즈 변경 무시
+        if (isCompactMode || isMobile) {
+          console.log('컴팩트 모드에서는 사이즈 변경 안함');
+          return;
+        }
+        
         console.log(`Unity 사이즈 변경: ${width}x${height}`);
         
         // 캔버스는 즉시 변경 (트랜지션 없이)
@@ -199,6 +250,12 @@
       // Enter 키로 User ID 설정
       document.addEventListener('DOMContentLoaded', function() {
         var userIdInput = document.getElementById("user-id-input");
+        
+        // URL에서 userId가 넘어온 경우 input에 설정
+        if (urlUserId) {
+          userIdInput.value = urlUserId;
+        }
+        
         userIdInput.addEventListener('keypress', function(e) {
           if (e.key === 'Enter') {
             setUserId();
@@ -246,12 +303,12 @@
         showBanner: unityShowBanner,
       };
 
-      // 초기 캔버스 사이즈 설정 (React 코드와 동일하게 350x470)
-      canvas.style.width = "350px";
-      canvas.style.height = "470px";
-
-      if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
-        // Mobile device style: fill the whole browser client area with the game canvas:
+      // 컴팩트 모드 또는 모바일이면 전체 화면
+      if (isCompactMode || isMobile) {
+        canvas.style.width = "100%";
+        canvas.style.height = "100%";
+        
+        // 모바일 viewport 설정
         var meta = document.createElement('meta');
         meta.name = 'viewport';
         meta.content = 'width=device-width, height=device-height, initial-scale=1.0, user-scalable=no, shrink-to-fit=yes';
@@ -276,9 +333,12 @@
           isLoaded = true;
           
           document.querySelector("#unity-loading-bar").style.display = "none";
-          document.querySelector("#unity-fullscreen-button").onclick = () => {
-            unityInstance.SetFullscreen(1);
-          };
+          
+          if (!isCompactMode && !isMobile) {
+            document.querySelector("#unity-fullscreen-button").onclick = () => {
+              unityInstance.SetFullscreen(1);
+            };
+          }
 
           // Unity 이벤트 디스패처 함수 등록
           // Unity .jslib에서 window.dispatchReactUnityEvent를 호출할 때 사용됨
@@ -301,6 +361,19 @@
           };
 
           console.log("Unity 로드 완료. 이벤트 리스너 등록됨.");
+          
+          // URL에서 userId가 넘어온 경우 자동으로 Unity에 전달
+          if (urlUserId) {
+            var userId = parseInt(urlUserId);
+            if (!isNaN(userId) && userId > 0) {
+              console.log('자동으로 User ID 설정:', userId);
+              setTimeout(() => {
+                unityInstance.SendMessage("System", "LoadMineAvatar_ForDev", userId);
+              }, 500); // Unity 초기화를 위해 약간의 딜레이
+            } else {
+              console.warn('유효하지 않은 User ID:', urlUserId);
+            }
+          }
           
         }).catch((message) => {
           alert(message);

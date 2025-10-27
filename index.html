@@ -98,7 +98,6 @@
       .toggle-button.active:hover {
         background-color: #E64A19;
       }
-
     </style>
   </head>
   <body>
@@ -126,19 +125,36 @@
     </div>
 
     <script>
-      var canvas = document.querySelector("#unity-canvas");
-      var unityInstance = null;
-      var isLoaded = false;
-      var isMineActive = true; // SetMine 상태 추적 (초기값: true)
-
-      // URL 파라미터 체크 (안전하게)
+      // URL 파라미터 체크
       var urlParams = new URLSearchParams(window.location.search);
       var isCompactMode = urlParams.has('mode') && urlParams.get('mode') === 'compact';
       var urlUserId = urlParams.has('userId') ? urlParams.get('userId') : null;
       var isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
+      // 컴팩트 모드 또는 모바일이면 body에 클래스 추가
+      if (isCompactMode || isMobile) {
+        document.body.classList.add('compact-mode');
+        console.log('컴팩트 모드 활성화');
+      }
+
+      // userId가 URL에 있으면 input에 설정
+      if (urlUserId) {
+        console.log('URL에서 받은 User ID:', urlUserId);
+      }
+
+      var canvas = document.querySelector("#unity-canvas");
+      var unityInstance = null;
+      var isLoaded = false;
+      var isMineActive = true; // SetMine 상태 추적 (초기값: true)
+
       // Unity 캔버스 사이즈 변경 함수
       function changeUnitySize(width, height) {
+        // 컴팩트 모드에서는 사이즈 변경 무시
+        if (isCompactMode || isMobile) {
+          console.log('컴팩트 모드에서는 사이즈 변경 안함');
+          return;
+        }
+        
         console.log(`Unity 사이즈 변경: ${width}x${height}`);
         
         // 캔버스는 즉시 변경 (트랜지션 없이)
@@ -275,34 +291,22 @@
         showBanner: unityShowBanner,
       };
 
-      // 초기 캔버스 사이즈 설정 (React 코드와 동일하게 350x470)
-      canvas.style.width = "350px";
-      canvas.style.height = "470px";
-
-      if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
-        // Mobile device style: fill the whole browser client area with the game canvas:
+      // 컴팩트 모드 또는 모바일이면 전체 화면
+      if (isCompactMode || isMobile) {
+        canvas.style.width = "100%";
+        canvas.style.height = "100%";
+        
+        // 모바일 viewport 설정
         var meta = document.createElement('meta');
         meta.name = 'viewport';
         meta.content = 'width=device-width, height=device-height, initial-scale=1.0, user-scalable=no, shrink-to-fit=yes';
         document.getElementsByTagName('head')[0].appendChild(meta);
         document.querySelector("#unity-container").className = "unity-mobile";
         canvas.className = "unity-mobile";
-        
-        // 컴팩트 모드 활성화
-        if (isCompactMode) {
-          document.body.classList.add('compact-mode');
-          console.log('모바일 컴팩트 모드 활성화');
-        }
       } else {
         // Desktop style: 초기 사이즈를 350x470으로 설정
         canvas.style.width = "350px";
         canvas.style.height = "470px";
-        
-        // 데스크톱에서 컴팩트 모드
-        if (isCompactMode) {
-          document.body.classList.add('compact-mode');
-          console.log('데스크톱 컴팩트 모드 활성화');
-        }
       }
 
       document.querySelector("#unity-loading-bar").style.display = "block";
@@ -317,9 +321,12 @@
           isLoaded = true;
           
           document.querySelector("#unity-loading-bar").style.display = "none";
-          document.querySelector("#unity-fullscreen-button").onclick = () => {
-            unityInstance.SetFullscreen(1);
-          };
+          
+          if (!isCompactMode && !isMobile) {
+            document.querySelector("#unity-fullscreen-button").onclick = () => {
+              unityInstance.SetFullscreen(1);
+            };
+          }
 
           // Unity 이벤트 디스패처 함수 등록
           // Unity .jslib에서 window.dispatchReactUnityEvent를 호출할 때 사용됨

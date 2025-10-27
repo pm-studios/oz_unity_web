@@ -137,10 +137,10 @@
     </div>
 
     <script>
-      // URL 파라미터 체크
+      // URL 파라미터 체크 (안전하게)
       var urlParams = new URLSearchParams(window.location.search);
-      var isCompactMode = urlParams.get('mode') === 'compact';
-      var urlUserId = urlParams.get('userId'); // userId 파라미터 가져오기
+      var isCompactMode = urlParams.has('mode') && urlParams.get('mode') === 'compact';
+      var urlUserId = urlParams.has('userId') ? urlParams.get('userId') : null;
       var isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
       // 컴팩트 모드 또는 모바일이면 body에 클래스 추가
@@ -149,7 +149,7 @@
         console.log('컴팩트 모드 활성화');
       }
 
-      // userId가 URL에 있으면 input에 설정
+      // userId가 URL에 있으면 로그 출력
       if (urlUserId) {
         console.log('URL에서 받은 User ID:', urlUserId);
       }

@@ -333,6 +333,14 @@
           window.dispatchReactUnityEvent = function(eventName, data) {
             console.log("Unity 이벤트 수신:", eventName, data);
             
+            // Flutter로 메시지 전달
+            if (window.flutter_inappwebview) {
+              window.flutter_inappwebview.callHandler('unityEvent', {
+                eventName: eventName,
+                data: data
+              });
+            }
+
             switch(eventName) {
               case "OnEnterFullscreen":
                 handleEnterFullscreen();
@@ -348,6 +356,19 @@
             }
           };
 
+          // Flutter에서 호출할 함수
+          window.sendToUnity = function(gameObject, method, value) {
+            console.log(`Flutter → Unity: ${gameObject}.${method}(${value})`);
+  
+            if (unityInstance && isLoaded) {
+              unityInstance.SendMessage(gameObject, method, value);
+              return true;
+            } else {
+              console.error("Unity가 아직 로드되지 않았습니다.");
+              return false;
+            }
+          };
+          
           console.log("Unity 로드 완료. 이벤트 리스너 등록됨.");
           
           // URL에서 userId가 넘어온 경우 자동으로 Unity에 전달

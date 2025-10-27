@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en-us">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <title>Unity Web Player | FUZE</title>
+    <link rel="shortcut icon" href="TemplateData/favicon.ico">
+    <link rel="stylesheet" href="TemplateData/style.css">
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+      }
+
+      #unity-canvas {
+        display: block;
+        margin: 0 auto;
+      }
+
+      /* 컴팩트 모드 스타일 */
+      body.compact-mode {
+        overflow: hidden;
+      }
+
+      body.compact-mode #unity-container {
+        width: 100vw !important;
+        height: 100vh !important;
+        margin: 0 !important;
+        padding: 0 !important;
+      }
+
+      body.compact-mode #unity-canvas {
+        width: 100% !important;
+        height: 100% !important;
+        margin: 0 !important;
+      }
+
+      body.compact-mode .control-panel,
+      body.compact-mode #unity-footer,
+      body.compact-mode #unity-warning {
+        display: none !important;
+      }
+
+      .control-panel {
+        margin: 10px auto;
+        max-width: 300px;
+        text-align: center;
+      }
+
+      .input-group {
+        margin: 10px 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+      }
+
+      .input-group input {
+        padding: 5px 8px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        font-size: 14px;
+        width: 80px;
+      }
+
+      .control-button {
+        padding: 6px 12px;
+        background-color: #4CAF50;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 13px;
+        transition: background-color 0.3s;
+      }
+
+      .control-button:hover {
+        background-color: #45a049;
+      }
+
+      .control-button:disabled {
+        background-color: #cccccc;
+        cursor: not-allowed;
+      }
+
+      .toggle-button {
+        background-color: #2196F3;
+      }
+
+      .toggle-button:hover {
+        background-color: #1976D2;
+      }
+
+      .toggle-button.active {
+        background-color: #FF5722;
+      }
+
+      .toggle-button.active:hover {
+        background-color: #E64A19;
+      }
+    </style>
+    <!-- GIF 생성 라이브러리 추가 -->
+    <script src="https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.js"></script>
+    <!-- GIF 로딩 확인 -->
+    <script>
+        window.addEventListener('load', function() {
+            if (typeof GIF !== 'undefined') {
+                console.log('✓ gif.js loaded successfully');
+            } else {
+                console.error('✗ gif.js failed to load');
+            }
+        });
+    </script>
+  </head>
+  <body>
+    <div id="unity-container" class="unity-desktop">
+      <canvas id="unity-canvas" width=350 height=470 tabindex="-1"></canvas>
+      <div id="unity-loading-bar">
+        <div id="unity-logo"></div>
+        <div id="unity-progress-bar-empty">
+          <div id="unity-progress-bar-full"></div>
+        </div>
+      </div>
+      <div id="unity-warning"> </div>
+      <div id="unity-footer">
+        <div id="unity-fullscreen-button"></div>
+      </div>
+      
+      <!-- 컨트롤 패널 - Unity 컴포넌트 하단에 위치 -->
+      <div class="control-panel">
+        <div class="input-group">
+          <input type="number" id="user-id-input" value="5681" min="1" max="999999" placeholder="User ID">
+          <button class="control-button" onclick="setUserId()">Set User ID</button>
+          <button id="setmine-button" class="control-button toggle-button" onclick="toggleSetMine()">SetMine: true</button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // URL 파라미터 체크
+      var urlParams = new URLSearchParams(window.location.search);
+      var isCompactMode = urlParams.get('mode') === 'compact';
+      var urlUserId = urlParams.get('userId'); // userId 파라미터 가져오기
+      var isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+
+      // 컴팩트 모드 또는 모바일이면 body에 클래스 추가
+      if (isCompactMode || isMobile) {
+        document.body.classList.add('compact-mode');
+        console.log('컴팩트 모드 활성화');
+      }
+
+      // userId가 URL에 있으면 input에 설정
+      if (urlUserId) {
+        console.log('URL에서 받은 User ID:', urlUserId);
+      }
+
+      var canvas = document.querySelector("#unity-canvas");
+      var unityInstance = null;
+      var isLoaded = false;
+      var isMineActive = true; // SetMine 상태 추적 (초기값: true)
+
+      // Unity 캔버스 사이즈 변경 함수
+      function changeUnitySize(width, height) {
+        // 컴팩트 모드에서는 사이즈 변경 무시
+        if (isCompactMode || isMobile) {
+          console.log('컴팩트 모드에서는 사이즈 변경 안함');
+          return;
+        }
+        
+        console.log(`Unity 사이즈 변경: ${width}x${height}`);
+        
+        // 캔버스는 즉시 변경 (트랜지션 없이)
+        canvas.style.width = width + "px";
+        canvas.style.height = height + "px";
+        canvas.width = width;
+        canvas.height = height;
+      }
+
+      // Unity에서 받는 메시지 핸들러들
+      function handleEnterFullscreen() {
+        console.log("Unity에서 받은 메시지: OnEnterFullscreen");
+        changeUnitySize(988, 698);
+      }
+
+      function handleLeaveFullscreen() {
+        console.log("Unity에서 받은 메시지: OnLeaveFullscreen");
+        changeUnitySize(350, 470);
+      }
+
+      function handleChangedAvatar(url) {
+        console.log("Unity에서 받은 메시지: OnChangedAvatar", url);
+      }
+
+      // User ID 설정 함수
+      function setUserId() {
+        if (!isLoaded || !unityInstance) {
+          alert("Unity가 아직 로드되지 않았습니다.");
+          return;
+        }
+
+        var userIdInput = document.getElementById("user-id-input");
+        var userId = parseInt(userIdInput.value);
+
+        if (isNaN(userId) || userId < 1) {
+          alert("유효한 User ID를 입력해주세요 (1 이상의 숫자)");
+          return;
+        }
+
+        console.log("Setting User ID:", userId);
+        unityInstance.SendMessage("System", "LoadMineAvatar_ForDev", userId);
+        
+        // 성공 메시지 표시
+        var button = event.target;
+        var originalText = button.textContent;
+        button.textContent = "설정됨!";
+        button.disabled = true;
+        
+        setTimeout(() => {
+          button.textContent = originalText;
+          button.disabled = false;
+        }, 1000);
+      }
+
+      // SetMine 토글 함수
+      function toggleSetMine() {
+        if (!isLoaded || !unityInstance) {
+          alert("Unity가 아직 로드되지 않았습니다.");
+          return;
+        }
+
+        // 상태 토글
+        isMineActive = !isMineActive;
+        
+        // 버튼 텍스트와 스타일 업데이트
+        var button = document.getElementById("setmine-button");
+        button.textContent = `SetMine: ${isMineActive}`;
+        
+        if (isMineActive) {
+          button.classList.remove("active");
+        } else {
+          button.classList.add("active");
+        }
+
+        // Unity로 int 값 전송 (true=1, false=0)
+        var mineValue = isMineActive ? 1 : 0;
+        console.log("Setting Mine:", mineValue);
+        unityInstance.SendMessage("System", "SetMine", mineValue);
+      }
+
+      // Enter 키로 User ID 설정
+      document.addEventListener('DOMContentLoaded', function() {
+        var userIdInput = document.getElementById("user-id-input");
+        
+        // URL에서 userId가 넘어온 경우 input에 설정
+        if (urlUserId) {
+          userIdInput.value = urlUserId;
+        }
+        
+        userIdInput.addEventListener('keypress', function(e) {
+          if (e.key === 'Enter') {
+            setUserId();
+          }
+        });
+      });
+
+      // Shows a temporary message banner/ribbon for a few seconds, or
+      // a permanent error message on top of the canvas if type=='error'.
+      // If type=='warning', a yellow highlight color is used.
+      // Modify or remove this function to customize the visually presented
+      // way that non-critical warnings and error messages are presented to the
+      // user.
+      function unityShowBanner(msg, type) {
+        var warningBanner = document.querySelector("#unity-warning");
+        function updateBannerVisibility() {
+          warningBanner.style.display = warningBanner.children.length ? 'block' : 'none';
+        }
+        var div = document.createElement('div');
+        div.innerHTML = msg;
+        warningBanner.appendChild(div);
+        if (type == 'error') div.style = 'background: red; padding: 10px;';
+        else {
+          if (type == 'warning') div.style = 'background: yellow; padding: 10px;';
+          setTimeout(function() {
+            warningBanner.removeChild(div);
+            updateBannerVisibility();
+          }, 5000);
+        }
+        updateBannerVisibility();
+      }
+
+      var buildUrl = "Build";
+      var loaderUrl = buildUrl + "/web.loader.js";
+      var config = {
+        arguments: [],
+        dataUrl: buildUrl + "/web.data",
+        frameworkUrl: buildUrl + "/web.framework.js",
+        codeUrl: buildUrl + "/web.wasm",
+        streamingAssetsUrl: "StreamingAssets",
+        companyName: "PM-Studios",
+        productName: "FUZE",
+        productVersion: "0.1",
+        devicePixelRatio: 1,
+        showBanner: unityShowBanner,
+      };
+
+      // 컴팩트 모드 또는 모바일이면 전체 화면
+      if (isCompactMode || isMobile) {
+        canvas.style.width = "100%";
+        canvas.style.height = "100%";
+        
+        // 모바일 viewport 설정
+        var meta = document.createElement('meta');
+        meta.name = 'viewport';
+        meta.content = 'width=device-width, height=device-height, initial-scale=1.0, user-scalable=no, shrink-to-fit=yes';
+        document.getElementsByTagName('head')[0].appendChild(meta);
+        document.querySelector("#unity-container").className = "unity-mobile";
+        canvas.className = "unity-mobile";
+      } else {
+        // Desktop style: 초기 사이즈를 350x470으로 설정
+        canvas.style.width = "350px";
+        canvas.style.height = "470px";
+      }
+
+      document.querySelector("#unity-loading-bar").style.display = "block";
+
+      var script = document.createElement("script");
+      script.src = loaderUrl;
+      script.onload = () => {
+        createUnityInstance(canvas, config, (progress) => {
+          document.querySelector("#unity-progress-bar-full").style.width = 100 * progress + "%";
+        }).then((instance) => {
+          unityInstance = instance;
+          isLoaded = true;
+          
+          document.querySelector("#unity-loading-bar").style.display = "none";
+          
+          if (!isCompactMode && !isMobile) {
+            document.querySelector("#unity-fullscreen-button").onclick = () => {
+              unityInstance.SetFullscreen(1);
+            };
+          }
+
+          // Unity 이벤트 디스패처 함수 등록
+          // Unity .jslib에서 window.dispatchReactUnityEvent를 호출할 때 사용됨
+          window.dispatchReactUnityEvent = function(eventName, data) {
+            console.log("Unity 이벤트 수신:", eventName, data);
+            
+            switch(eventName) {
+              case "OnEnterFullscreen":
+                handleEnterFullscreen();
+                break;
+              case "OnLeaveFullscreen":
+                handleLeaveFullscreen();
+                break;
+              case "OnChangedAvatar":
+                handleChangedAvatar(data);
+                break;
+              default:
+                console.warn("알 수 없는 Unity 이벤트:", eventName);
+            }
+          };
+
+          console.log("Unity 로드 완료. 이벤트 리스너 등록됨.");
+          
+          // URL에서 userId가 넘어온 경우 자동으로 Unity에 전달
+          if (urlUserId) {
+            var userId = parseInt(urlUserId);
+            if (!isNaN(userId) && userId > 0) {
+              console.log('자동으로 User ID 설정:', userId);
+              setTimeout(() => {
+                unityInstance.SendMessage("System", "LoadMineAvatar_ForDev", userId);
+              }, 500); // Unity 초기화를 위해 약간의 딜레이
+            } else {
+              console.warn('유효하지 않은 User ID:', urlUserId);
+            }
+          }
+          
+        }).catch((message) => {
+          alert(message);
+        });
+      };
+
+      document.body.appendChild(script);
+    </script>
+  </body>
+</html>

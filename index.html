@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8">
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-    <title>Unity Web Player | FUZE</title>
+    <title>FUZE Avatar Web Player</title>
     <link rel="shortcut icon" href="TemplateData/favicon.ico">
     <link rel="stylesheet" href="TemplateData/style.css">
     <style>
@@ -186,14 +186,18 @@
       }
 
       // Unity에서 받는 메시지 핸들러들
-      function handleEnterFullscreen() {
-        console.log("Unity에서 받은 메시지: OnEnterFullscreen");
-        changeUnitySize(988, 698);
-      }
+      function handleStateChanged(status) {
+        console.log("Unity에서 받은 메시지: OnStateChanged", status);
 
-      function handleLeaveFullscreen() {
-        console.log("Unity에서 받은 메시지: OnLeaveFullscreen");
-        changeUnitySize(350, 470);
+        switch (status) {
+          case "EnterFullscreen":
+            changeUnitySize(988, 698);
+            break;
+
+          case "LeaveFullscreen":
+            changeUnitySize(350, 470);
+            break;
+        }
       }
 
       function handleChangedAvatar(url) {
@@ -363,11 +367,8 @@
             }
 
             switch(eventName) {
-              case "OnEnterFullscreen":
-                handleEnterFullscreen();
-                break;
-              case "OnLeaveFullscreen":
-                handleLeaveFullscreen();
+              case "OnStateChanged":
+                handleStateChanged(data);
                 break;
               case "OnChangedAvatar":
                 handleChangedAvatar(data);

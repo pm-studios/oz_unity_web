@@ -10,11 +10,13 @@
       body {
         margin: 0;
         padding: 0;
+        background-color: #4A6B8A;
       }
 
       #unity-canvas {
         display: block;
         margin: 0 auto;
+        background-color: #4A6B8A;
       }
 
       /* 컴팩트 모드 스타일 */
@@ -98,13 +100,32 @@
       .toggle-button.active:hover {
         background-color: #E64A19;
       }
+
+      /* 배경색 변경 */
+      #unity-container {
+        background-color: #4A6B8A;
+      }
+
+      /* 로딩바 위치 상단 30% */
+      #unity-loading-bar {
+        top: 30%;
+      }
+
+      /* 텍스트 추가 */
+      #unity-loading-bar::before {
+        content: "Getting avatar ready...";
+        display: block;
+        color: white;
+        font-size: 16px;
+        margin-bottom: 10px;
+        text-align: center;
+      }
     </style>
   </head>
   <body>
     <div id="unity-container" class="unity-desktop">
       <canvas id="unity-canvas" width=350 height=470 tabindex="-1"></canvas>
       <div id="unity-loading-bar">
-        <div id="unity-logo"></div>
         <div id="unity-progress-bar-empty">
           <div id="unity-progress-bar-full"></div>
         </div>

@@ -19,7 +19,7 @@
         background-color: #4A6B8A;
       }
 
-      /* 디버그 패널 추가 */
+      /* 디버그 패널 */
       #debug-panel {
         position: fixed;
         top: 10px;
@@ -55,7 +55,8 @@
 
       body.compact-mode .control-panel,
       body.compact-mode #unity-footer,
-      body.compact-mode #unity-warning {
+      body.compact-mode #unity-warning,
+      body.compact-mode #debug-panel {
         display: none !important;
       }
 
@@ -165,7 +166,7 @@
       var debugPanel = document.getElementById('debug-panel');
       var debugLogs = [];
       
-      function debugLog(message, isError = false) {
+      function debugLog(message) {
         var timestamp = new Date().toLocaleTimeString();
         var logMessage = `[${timestamp}] ${message}`;
         
@@ -177,16 +178,15 @@
         }
         
         debugPanel.innerHTML = debugLogs.map(log => 
-          `<div style="margin: 2px 0; ${log.includes('ERROR') || log.includes('MALI') ? 'color: #f00; font-weight: bold;' : ''}">${log}</div>`
+          `<div style="margin: 2px 0; ${log.includes('MALI') || log.includes('ERROR') ? 'color: #f00; font-weight: bold;' : ''}">${log}</div>`
         ).join('');
         
         debugPanel.scrollTop = debugPanel.scrollHeight;
       }
 
-      // ========== GPU 및 시스템 정보 감지 ==========
+      // ========== GPU 정보 감지 ==========
       var isMaliGPU = false;
       var gpuInfo = { vendor: 'unknown', renderer: 'unknown' };
-      var maxCanvasHeight = 2048; // Mali GPU 제한
 
       function detectGPU() {
         try {
@@ -205,8 +205,7 @@
               debugLog(`Vendor: ${gpuInfo.vendor}`);
               
               if (isMaliGPU) {
-                debugLog('===== MALI GPU 감지! Canvas Height 제한 적용 =====', true);
-                debugLog(`Max Canvas Height: ${maxCanvasHeight}px`, true);
+                debugLog('===== MALI GPU 감지됨 =====');
               }
             }
           }
@@ -215,19 +214,14 @@
         }
       }
 
-      // ========== Canvas 크기 제한 함수 ==========
-      function constrainCanvasSize(width, height) {
-        debugLog(`원본 크기 요청: ${width}x${height}`);
-        
-        // Mali GPU에서 height 제한
-        if (isMaliGPU && height > maxCanvasHeight) {
-          var ratio = width / height;
-          height = maxCanvasHeight;
-          width = Math.floor(maxCanvasHeight * ratio);
-          debugLog(`===== Mali GPU: 크기 제한 적용 ${width}x${height} =====`, true);
-        }
-        
-        return { width: width, height: height };
+      // ========== Canvas 상태 로깅 ==========
+      function logCanvasState(label) {
+        debugLog(`----- ${label} -----`);
+        debugLog(`Canvas.width: ${canvas.width}, height: ${canvas.height}`);
+        debugLog(`Canvas.style: ${canvas.style.width} x ${canvas.style.height}`);
+        debugLog(`Canvas.offset: ${canvas.offsetWidth} x ${canvas.offsetHeight}`);
+        debugLog(`Canvas.display: ${getComputedStyle(canvas).display}`);
+        debugLog(`Canvas.visibility: ${getComputedStyle(canvas).visibility}`);
       }
 
       // ========== 기존 변수들 ==========
@@ -253,65 +247,21 @@
       // GPU 감지 실행
       detectGPU();
 
-      // ========== Canvas 상태 모니터링 ==========
-      function logCanvasState(label) {
-        debugLog(`----- ${label} -----`);
-        debugLog(`Canvas.width: ${canvas.width}`);
-        debugLog(`Canvas.height: ${canvas.height}`);
-        debugLog(`Canvas.style.width: ${canvas.style.width}`);
-        debugLog(`Canvas.style.height: ${canvas.style.height}`);
-        debugLog(`Canvas.offsetWidth: ${canvas.offsetWidth}`);
-        debugLog(`Canvas.offsetHeight: ${canvas.offsetHeight}`);
-        debugLog(`Canvas.display: ${getComputedStyle(canvas).display}`);
-        debugLog(`Canvas.visibility: ${getComputedStyle(canvas).visibility}`);
-        
-        // WebGL 컨텍스트 확인
-        try {
-          var gl = canvas.getContext('webgl2') || canvas.getContext('webgl');
-          if (gl) {
-            var viewport = gl.getParameter(gl.VIEWPORT);
-            debugLog(`WebGL Viewport: [${viewport.join(', ')}]`);
-            debugLog(`WebGL Context: ${gl ? 'OK' : 'FAIL'}`);
-          }
-        } catch (e) {
-          debugLog(`WebGL 체크 실패: ${e.message}`);
-        }
-      }
-
-      // ========== Unity 사이즈 변경 함수 (수정) ==========
+      // ========== Unity 사이즈 변경 함수 ==========
       function changeUnitySize(width, height) {
         if (isCompactMode || isMobile) {
           debugLog('컴팩트 모드에서는 사이즈 변경 안함');
           return;
         }
         
-        debugLog(`=== Unity 사이즈 변경 요청: ${width}x${height} ===`);
+        debugLog(`Unity 사이즈 변경: ${width}x${height}`);
         
-        // Mali GPU 제한 적용
-        var constrained = constrainCanvasSize(width, height);
-        width = constrained.width;
-        height = constrained.height;
-        
-        // 캔버스 크기 적용
         canvas.style.width = width + "px";
         canvas.style.height = height + "px";
         canvas.width = width;
         canvas.height = height;
         
         logCanvasState('사이즈 변경 후');
-        
-        // WebGL 컨텍스트 재확인
-        setTimeout(() => {
-          try {
-            var gl = canvas.getContext('webgl2') || canvas.getContext('webgl');
-            if (gl) {
-              gl.viewport(0, 0, width, height);
-              debugLog('WebGL viewport 업데이트 완료');
-            }
-          } catch (e) {
-            debugLog(`WebGL viewport 업데이트 실패: ${e.message}`);
-          }
-        }, 100);
       }
 
       // ========== Unity 메시지 핸들러 ==========
@@ -456,11 +406,8 @@
         document.querySelector("#unity-container").className = "unity-mobile";
         canvas.className = "unity-mobile";
       } else {
-        var initialSize = constrainCanvasSize(350, 470);
-        canvas.style.width = initialSize.width + "px";
-        canvas.style.height = initialSize.height + "px";
-        canvas.width = initialSize.width;
-        canvas.height = initialSize.height;
+        canvas.style.width = "350px";
+        canvas.style.height = "470px";
         
         debugLog('Desktop 모드 설정');
         logCanvasState('초기 설정 (Desktop)');
@@ -496,7 +443,7 @@
 
           // ========== Unity 이벤트 디스패처 ==========
           window.dispatchReactUnityEvent = function(eventName, data) {
-            debugLog(`Unity → JS 이벤트: ${eventName} = ${data}`);
+            debugLog(`Unity → JS: ${eventName} = ${data}`);
             
             if (window.flutter_inappwebview) {
               window.flutter_inappwebview.callHandler('unityEvent', {
@@ -530,7 +477,7 @@
             }
           };
           
-          debugLog('===== Unity 완전 초기화 완료 =====');
+          debugLog('===== Unity 초기화 완료 =====');
           
           // ========== URL User ID 자동 설정 ==========
           if (urlUserId) {
@@ -539,31 +486,12 @@
               debugLog(`자동 User ID 설정: ${userId}`);
               setTimeout(() => {
                 unityInstance.SendMessage("System", "LoadMineAvatar_ForDev", userId);
-                logCanvasState('Avatar 로드 시작');
               }, 500);
             }
           }
           
-          // Canvas 상태 주기적 체크
-          setInterval(() => {
-            var gl = canvas.getContext('webgl2') || canvas.getContext('webgl');
-            if (gl && canvas.height > 0) {
-              var isBlack = true;
-              try {
-                var pixels = new Uint8Array(4);
-                gl.readPixels(canvas.width/2, canvas.height/2, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
-                isBlack = pixels[0] === 0 && pixels[1] === 0 && pixels[2] === 0;
-              } catch(e) {}
-              
-              if (isBlack && isLoaded) {
-                debugLog('===== 경고: Canvas가 검정색입니다! =====', true);
-                logCanvasState('검정 화면 감지');
-              }
-            }
-          }, 3000);
-          
         }).catch((message) => {
-          debugLog(`Unity 로드 실패: ${message}`, true);
+          debugLog(`Unity 로드 실패: ${message}`);
           alert(message);
         });
       };

@@ -187,7 +187,7 @@
 
       // Unity에서 받는 메시지 핸들러들
       function handleStateChanged(status) {
-        console.log("Unity에서 받은 메시지: OnStateChanged", status);
+        //console.log("Unity에서 받은 메시지: OnStateChanged", status);
 
         switch (status) {
           case "EnterFullscreen":
@@ -201,7 +201,7 @@
       }
 
       function handleChangedAvatar(url) {
-        console.log("Unity에서 받은 메시지: OnChangedAvatar", url);
+        //console.log("Unity에서 받은 메시지: OnChangedAvatar", url);
       }
 
       // User ID 설정 함수
@@ -356,7 +356,7 @@
           // Unity 이벤트 디스패처 함수 등록
           // Unity .jslib에서 window.dispatchReactUnityEvent를 호출할 때 사용됨
           window.dispatchReactUnityEvent = function(eventName, data) {
-            console.log("Unity 이벤트 수신:", eventName, data);
+            //console.log("Unity 이벤트 수신:", eventName, data);
             
             // Flutter로 메시지 전달
             if (window.flutter_inappwebview) {
@@ -380,7 +380,7 @@
 
           // Flutter에서 호출할 함수
           window.sendToUnity = function(gameObject, method, value) {
-            console.log(`Flutter → Unity: ${gameObject}.${method}(${value})`);
+            //console.log(`Flutter → Unity: ${gameObject}.${method}(${value})`);
   
             if (unityInstance && isLoaded) {
               unityInstance.SendMessage(gameObject, method, value);

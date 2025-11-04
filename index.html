@@ -399,7 +399,7 @@
             if (!isNaN(userId) && userId > 0) {
               console.log('자동으로 User ID 설정:', userId);
               setTimeout(() => {
-                unityInstance.SendMessage("System", "LoadMineAvatar_ForDev", userId);
+                unityInstance.SendMessage("System", "LoadMSetUineAvatar_ForDev", userId);
               }, 500); // Unity 초기화를 위해 약간의 딜레이
             } else {
               console.warn('유효하지 않은 User ID:', urlUserId);

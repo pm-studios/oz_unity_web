@@ -19,6 +19,50 @@
         background-color: #4A6B8A;
       }
 
+      /* Mali GPU error message */
+      #mali-error {
+        display: none;
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: white;
+        padding: 40px;
+        border-radius: 12px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        max-width: 500px;
+        text-align: center;
+        z-index: 10000;
+      }
+
+      #mali-error h2 {
+        color: #FF5722;
+        margin-top: 0;
+        font-size: 24px;
+      }
+
+      #mali-error p {
+        color: #333;
+        line-height: 1.6;
+        margin: 20px 0;
+      }
+
+      #mali-error a {
+        display: inline-block;
+        background-color: #4CAF50;
+        color: white;
+        padding: 12px 24px;
+        text-decoration: none;
+        border-radius: 6px;
+        margin-top: 10px;
+        font-weight: bold;
+        transition: background-color 0.3s;
+      }
+
+      #mali-error a:hover {
+        background-color: #45a049;
+      }
+
       /* 컴팩트 모드 스타일 */
       body.compact-mode {
         overflow: hidden;
@@ -123,6 +167,12 @@
     </style>
   </head>
   <body>
+    <!-- Mali GPU Error Message -->
+    <div id="mali-error">
+      <p>⚠️ This device doesn’t fully support WebGL 2.0.</p>
+      <p>Please visit <b>https://fuze.io</b> on a desktop browser to customize your avatar.</p>
+    </div>
+
     <div id="unity-container" class="unity-desktop">
       <canvas id="unity-canvas" width=350 height=470 tabindex="-1"></canvas>
       <div id="unity-loading-bar">
@@ -146,272 +196,304 @@
     </div>
 
     <script>
-      // URL 파라미터 체크
-      var urlParams = new URLSearchParams(window.location.search);
-      var isCompactMode = urlParams.has('mode') && urlParams.get('mode') === 'compact';
-      var urlUserId = urlParams.has('userId') ? urlParams.get('userId') : null;
-      var isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-
-      // 컴팩트 모드 또는 모바일이면 body에 클래스 추가
-      if (isCompactMode || isMobile) {
-        document.body.classList.add('compact-mode');
-        console.log('컴팩트 모드 활성화');
-      }
-
-      // userId가 URL에 있으면 input에 설정
-      if (urlUserId) {
-        console.log('URL에서 받은 User ID:', urlUserId);
-      }
-
-      var canvas = document.querySelector("#unity-canvas");
-      var unityInstance = null;
-      var isLoaded = false;
-      var isMineActive = true; // SetMine 상태 추적 (초기값: true)
-
-      // Unity 캔버스 사이즈 변경 함수
-      function changeUnitySize(width, height) {
-        // 컴팩트 모드에서는 사이즈 변경 무시
-        if (isCompactMode || isMobile) {
-          console.log('컴팩트 모드에서는 사이즈 변경 안함');
-          return;
-        }
-        
-        console.log(`Unity 사이즈 변경: ${width}x${height}`);
-        
-        // 캔버스는 즉시 변경 (트랜지션 없이)
-        canvas.style.width = width + "px";
-        canvas.style.height = height + "px";
-        canvas.width = width;
-        canvas.height = height;
-      }
-
-      // Unity에서 받는 메시지 핸들러들
-      function handleStateChanged(status) {
-        //console.log("Unity에서 받은 메시지: OnStateChanged", status);
-
-        switch (status) {
-          case "EnterFullscreen":
-            changeUnitySize(988, 698);
-            break;
-
-          case "LeaveFullscreen":
-            changeUnitySize(350, 470);
-            break;
-        }
-      }
-
-      function handleChangedAvatar(url) {
-        //console.log("Unity에서 받은 메시지: OnChangedAvatar", url);
-      }
-
-      // User ID 설정 함수
-      function setUserId() {
-        if (!isLoaded || !unityInstance) {
-          alert("Unity가 아직 로드되지 않았습니다.");
-          return;
-        }
-
-        var userIdInput = document.getElementById("user-id-input");
-        var userId = parseInt(userIdInput.value);
-
-        if (isNaN(userId) || userId < 1) {
-          alert("유효한 User ID를 입력해주세요 (1 이상의 숫자)");
-          return;
-        }
-
-        console.log("Setting User ID:", userId);
-        unityInstance.SendMessage("System", "LoadMineAvatar_ForDev", userId);
-        
-        // 성공 메시지 표시
-        var button = event.target;
-        var originalText = button.textContent;
-        button.textContent = "설정됨!";
-        button.disabled = true;
-        
-        setTimeout(() => {
-          button.textContent = originalText;
-          button.disabled = false;
-        }, 1000);
-      }
-
-      // SetMine 토글 함수
-      function toggleSetMine() {
-        if (!isLoaded || !unityInstance) {
-          alert("Unity가 아직 로드되지 않았습니다.");
-          return;
-        }
-
-        // 상태 토글
-        isMineActive = !isMineActive;
-        
-        // 버튼 텍스트와 스타일 업데이트
-        var button = document.getElementById("setmine-button");
-        button.textContent = `SetMine: ${isMineActive}`;
-        
-        if (isMineActive) {
-          button.classList.remove("active");
-        } else {
-          button.classList.add("active");
-        }
-
-        // Unity로 int 값 전송 (true=1, false=0)
-        var mineValue = isMineActive ? 1 : 0;
-        console.log("Setting Mine:", mineValue);
-        unityInstance.SendMessage("System", "SetMine", mineValue);
-      }
-
-      // Enter 키로 User ID 설정
-      document.addEventListener('DOMContentLoaded', function() {
-        var userIdInput = document.getElementById("user-id-input");
-        
-        // URL에서 userId가 넘어온 경우 input에 설정
-        if (urlUserId) {
-          userIdInput.value = urlUserId;
-        }
-        
-        userIdInput.addEventListener('keypress', function(e) {
-          if (e.key === 'Enter') {
-            setUserId();
+      // Mali GPU 체크 후 Unity 로드
+      function checkGPUCompatibility() {
+        try {
+          var testCanvas = document.createElement('canvas');
+          var gl = testCanvas.getContext('webgl2') || testCanvas.getContext('webgl');
+          
+          if (gl) {
+            var debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
+            if (debugInfo) {
+              var renderer = gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL);
+              console.log('GPU Detected:', renderer);
+              
+              if (renderer.toLowerCase().includes('mali')) {
+                console.log('Mali GPU detected - blocking Unity load');
+                return false;
+              }
+            }
           }
-        });
-      });
-
-      // Shows a temporary message banner/ribbon for a few seconds, or
-      // a permanent error message on top of the canvas if type=='error'.
-      // If type=='warning', a yellow highlight color is used.
-      // Modify or remove this function to customize the visually presented
-      // way that non-critical warnings and error messages are presented to the
-      // user.
-      function unityShowBanner(msg, type) {
-        var warningBanner = document.querySelector("#unity-warning");
-        function updateBannerVisibility() {
-          warningBanner.style.display = warningBanner.children.length ? 'block' : 'none';
+        } catch (e) {
+          console.error('GPU detection failed:', e);
         }
-        var div = document.createElement('div');
-        div.innerHTML = msg;
-        warningBanner.appendChild(div);
-        if (type == 'error') div.style = 'background: red; padding: 10px;';
-        else {
-          if (type == 'warning') div.style = 'background: yellow; padding: 10px;';
-          setTimeout(function() {
-            warningBanner.removeChild(div);
-            updateBannerVisibility();
-          }, 5000);
-        }
-        updateBannerVisibility();
+        return true;
       }
 
-      var buildUrl = "Build";
-      var loaderUrl = buildUrl + "/web.loader.js";
-      var config = {
-        arguments: [],
-        dataUrl: buildUrl + "/web.data",
-        frameworkUrl: buildUrl + "/web.framework.js",
-        codeUrl: buildUrl + "/web.wasm",
-        streamingAssetsUrl: "StreamingAssets",
-        companyName: "PM-Studios",
-        productName: "FUZE",
-        productVersion: "0.1",
-        devicePixelRatio: 1,
-        showBanner: unityShowBanner,
-      };
+      // 호환되지 않는 기기에 에러 메시지 표시
+      function showMaliError() {
+        document.getElementById('mali-error').style.display = 'block';
+        document.getElementById('unity-container').style.display = 'none';
+      }
 
-      // 컴팩트 모드 또는 모바일이면 전체 화면
-      if (isCompactMode || isMobile) {
-        canvas.style.width = "100%";
-        canvas.style.height = "100%";
-        
-        // 모바일 viewport 설정
-        var meta = document.createElement('meta');
-        meta.name = 'viewport';
-        meta.content = 'width=device-width, height=device-height, initial-scale=1.0, user-scalable=no, shrink-to-fit=yes';
-        document.getElementsByTagName('head')[0].appendChild(meta);
-        document.querySelector("#unity-container").className = "unity-mobile";
-        canvas.className = "unity-mobile";
+      // GPU 호환성 체크
+      var isCompatibleGPU = checkGPUCompatibility();
+      
+      if (!isCompatibleGPU) {
+        showMaliError();
       } else {
-        // Desktop style: 초기 사이즈를 350x470으로 설정
-        canvas.style.width = "350px";
-        canvas.style.height = "470px";
-      }
+        // 원본 스크립트 계속
+        // URL 파라미터 체크
+        var urlParams = new URLSearchParams(window.location.search);
+        var isCompactMode = urlParams.has('mode') && urlParams.get('mode') === 'compact';
+        var urlUserId = urlParams.has('userId') ? urlParams.get('userId') : null;
+        var isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
-      document.querySelector("#unity-loading-bar").style.display = "block";
+        // 컴팩트 모드 또는 모바일이면 body에 클래스 추가
+        if (isCompactMode || isMobile) {
+          document.body.classList.add('compact-mode');
+          console.log('컴팩트 모드 활성화');
+        }
 
-      var script = document.createElement("script");
-      script.src = loaderUrl;
-      script.onload = () => {
-        createUnityInstance(canvas, config, (progress) => {
-          document.querySelector("#unity-progress-bar-full").style.width = 100 * progress + "%";
-        }).then((instance) => {
-          unityInstance = instance;
-          isLoaded = true;
+        // userId가 URL에 있으면 input에 설정
+        if (urlUserId) {
+          console.log('URL에서 받은 User ID:', urlUserId);
+        }
+
+        var canvas = document.querySelector("#unity-canvas");
+        var unityInstance = null;
+        var isLoaded = false;
+        var isMineActive = true; // SetMine 상태 추적 (초기값: true)
+
+        // Unity 캔버스 사이즈 변경 함수
+        function changeUnitySize(width, height) {
+          // 컴팩트 모드에서는 사이즈 변경 무시
+          if (isCompactMode || isMobile) {
+            console.log('컴팩트 모드에서는 사이즈 변경 안함');
+            return;
+          }
           
-          document.querySelector("#unity-loading-bar").style.display = "none";
+          console.log(`Unity 사이즈 변경: ${width}x${height}`);
           
-          if (!isCompactMode && !isMobile) {
-            document.querySelector("#unity-fullscreen-button").onclick = () => {
-              unityInstance.SetFullscreen(1);
-            };
+          // 캔버스는 즉시 변경 (트랜지션 없이)
+          canvas.style.width = width + "px";
+          canvas.style.height = height + "px";
+          canvas.width = width;
+          canvas.height = height;
+        }
+
+        // Unity에서 받는 메시지 핸들러들
+        function handleStateChanged(status) {
+          //console.log("Unity에서 받은 메시지: OnStateChanged", status);
+
+          switch (status) {
+            case "EnterFullscreen":
+              changeUnitySize(988, 698);
+              break;
+
+            case "LeaveFullscreen":
+              changeUnitySize(350, 470);
+              break;
+          }
+        }
+
+        function handleChangedAvatar(url) {
+          //console.log("Unity에서 받은 메시지: OnChangedAvatar", url);
+        }
+
+        // User ID 설정 함수
+        function setUserId() {
+          if (!isLoaded || !unityInstance) {
+            alert("Unity가 아직 로드되지 않았습니다.");
+            return;
           }
 
-          // Unity 이벤트 디스패처 함수 등록
-          // Unity .jslib에서 window.dispatchReactUnityEvent를 호출할 때 사용됨
-          window.dispatchReactUnityEvent = function(eventName, data) {
-            //console.log("Unity 이벤트 수신:", eventName, data);
-            
-            // Flutter로 메시지 전달
-            if (window.flutter_inappwebview) {
-              window.flutter_inappwebview.callHandler('unityEvent', {
-                eventName: eventName,
-                data: data
-              });
-            }
+          var userIdInput = document.getElementById("user-id-input");
+          var userId = parseInt(userIdInput.value);
 
-            switch(eventName) {
-              case "OnStateChanged":
-                handleStateChanged(data);
-                break;
-              case "OnChangedAvatar":
-                handleChangedAvatar(data);
-                break;
-              default:
-                console.warn("알 수 없는 Unity 이벤트:", eventName);
-            }
-          };
+          if (isNaN(userId) || userId < 1) {
+            alert("유효한 User ID를 입력해주세요 (1 이상의 숫자)");
+            return;
+          }
 
-          // Flutter에서 호출할 함수
-          window.sendToUnity = function(gameObject, method, value) {
-            //console.log(`Flutter → Unity: ${gameObject}.${method}(${value})`);
-  
-            if (unityInstance && isLoaded) {
-              unityInstance.SendMessage(gameObject, method, value);
-              return true;
-            } else {
-              console.error("Unity가 아직 로드되지 않았습니다.");
-              return false;
-            }
-          };
+          console.log("Setting User ID:", userId);
+          unityInstance.SendMessage("System", "LoadMineAvatar_ForDev", userId);
           
-          console.log("Unity 로드 완료. 이벤트 리스너 등록됨.");
+          // 성공 메시지 표시
+          var button = event.target;
+          var originalText = button.textContent;
+          button.textContent = "설정됨!";
+          button.disabled = true;
           
-          // URL에서 userId가 넘어온 경우 자동으로 Unity에 전달
+          setTimeout(() => {
+            button.textContent = originalText;
+            button.disabled = false;
+          }, 1000);
+        }
+
+        // SetMine 토글 함수
+        function toggleSetMine() {
+          if (!isLoaded || !unityInstance) {
+            alert("Unity가 아직 로드되지 않았습니다.");
+            return;
+          }
+
+          // 상태 토글
+          isMineActive = !isMineActive;
+          
+          // 버튼 텍스트와 스타일 업데이트
+          var button = document.getElementById("setmine-button");
+          button.textContent = `SetMine: ${isMineActive}`;
+          
+          if (isMineActive) {
+            button.classList.remove("active");
+          } else {
+            button.classList.add("active");
+          }
+
+          // Unity로 int 값 전송 (true=1, false=0)
+          var mineValue = isMineActive ? 1 : 0;
+          console.log("Setting Mine:", mineValue);
+          unityInstance.SendMessage("System", "SetMine", mineValue);
+        }
+
+        // Enter 키로 User ID 설정
+        document.addEventListener('DOMContentLoaded', function() {
+          var userIdInput = document.getElementById("user-id-input");
+          
+          // URL에서 userId가 넘어온 경우 input에 설정
           if (urlUserId) {
-            var userId = parseInt(urlUserId);
-            if (!isNaN(userId) && userId > 0) {
-              console.log('자동으로 User ID 설정:', userId);
-              setTimeout(() => {
-                unityInstance.SendMessage("System", "LoadMSetUineAvatar_ForDev", userId);
-              }, 500); // Unity 초기화를 위해 약간의 딜레이
-            } else {
-              console.warn('유효하지 않은 User ID:', urlUserId);
-            }
+            userIdInput.value = urlUserId;
           }
           
-        }).catch((message) => {
-          alert(message);
+          userIdInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+              setUserId();
+            }
+          });
         });
-      };
 
-      document.body.appendChild(script);
+        function unityShowBanner(msg, type) {
+          var warningBanner = document.querySelector("#unity-warning");
+          function updateBannerVisibility() {
+            warningBanner.style.display = warningBanner.children.length ? 'block' : 'none';
+          }
+          var div = document.createElement('div');
+          div.innerHTML = msg;
+          warningBanner.appendChild(div);
+          if (type == 'error') div.style = 'background: red; padding: 10px;';
+          else {
+            if (type == 'warning') div.style = 'background: yellow; padding: 10px;';
+            setTimeout(function() {
+              warningBanner.removeChild(div);
+              updateBannerVisibility();
+            }, 5000);
+          }
+          updateBannerVisibility();
+        }
+
+        var buildUrl = "Build";
+        var loaderUrl = buildUrl + "/web.loader.js";
+        var config = {
+          arguments: [],
+          dataUrl: buildUrl + "/web.data",
+          frameworkUrl: buildUrl + "/web.framework.js",
+          codeUrl: buildUrl + "/web.wasm",
+          streamingAssetsUrl: "StreamingAssets",
+          companyName: "PM-Studios",
+          productName: "FUZE",
+          productVersion: "0.1",
+          devicePixelRatio: 1,
+          showBanner: unityShowBanner,
+        };
+
+        // 컴팩트 모드 또는 모바일이면 전체 화면
+        if (isCompactMode || isMobile) {
+          canvas.style.width = "100%";
+          canvas.style.height = "100%";
+          
+          // 모바일 viewport 설정
+          var meta = document.createElement('meta');
+          meta.name = 'viewport';
+          meta.content = 'width=device-width, height=device-height, initial-scale=1.0, user-scalable=no, shrink-to-fit=yes';
+          document.getElementsByTagName('head')[0].appendChild(meta);
+          document.querySelector("#unity-container").className = "unity-mobile";
+          canvas.className = "unity-mobile";
+        } else {
+          // Desktop style: 초기 사이즈를 350x470으로 설정
+          canvas.style.width = "350px";
+          canvas.style.height = "470px";
+        }
+
+        document.querySelector("#unity-loading-bar").style.display = "block";
+
+        var script = document.createElement("script");
+        script.src = loaderUrl;
+        script.onload = () => {
+          createUnityInstance(canvas, config, (progress) => {
+            document.querySelector("#unity-progress-bar-full").style.width = 100 * progress + "%";
+          }).then((instance) => {
+            unityInstance = instance;
+            isLoaded = true;
+            
+            document.querySelector("#unity-loading-bar").style.display = "none";
+            
+            if (!isCompactMode && !isMobile) {
+              document.querySelector("#unity-fullscreen-button").onclick = () => {
+                unityInstance.SetFullscreen(1);
+              };
+            }
+
+            // Unity 이벤트 디스패처 함수 등록
+            // Unity .jslib에서 window.dispatchReactUnityEvent를 호출할 때 사용됨
+            window.dispatchReactUnityEvent = function(eventName, data) {
+              //console.log("Unity 이벤트 수신:", eventName, data);
+              
+              // Flutter로 메시지 전달
+              if (window.flutter_inappwebview) {
+                window.flutter_inappwebview.callHandler('unityEvent', {
+                  eventName: eventName,
+                  data: data
+                });
+              }
+
+              switch(eventName) {
+                case "OnStateChanged":
+                  handleStateChanged(data);
+                  break;
+                case "OnChangedAvatar":
+                  handleChangedAvatar(data);
+                  break;
+                default:
+                  console.warn("알 수 없는 Unity 이벤트:", eventName);
+              }
+            };
+
+            // Flutter에서 호출할 함수
+            window.sendToUnity = function(gameObject, method, value) {
+              //console.log(`Flutter → Unity: ${gameObject}.${method}(${value})`);
+    
+              if (unityInstance && isLoaded) {
+                unityInstance.SendMessage(gameObject, method, value);
+                return true;
+              } else {
+                console.error("Unity가 아직 로드되지 않았습니다.");
+                return false;
+              }
+            };
+            
+            console.log("Unity 로드 완료. 이벤트 리스너 등록됨.");
+            
+            // URL에서 userId가 넘어온 경우 자동으로 Unity에 전달
+            if (urlUserId) {
+              var userId = parseInt(urlUserId);
+              if (!isNaN(userId) && userId > 0) {
+                console.log('자동으로 User ID 설정:', userId);
+                setTimeout(() => {
+                  unityInstance.SendMessage("System", "LoadMineAvatar_ForDev", userId);
+                }, 500); // Unity 초기화를 위해 약간의 딜레이
+              } else {
+                console.warn('유효하지 않은 User ID:', urlUserId);
+              }
+            }
+            
+          }).catch((message) => {
+            alert(message);
+          });
+        };
+
+        document.body.appendChild(script);
+      }
     </script>
   </body>
 </html>

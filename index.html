@@ -24,43 +24,36 @@
         display: none;
         position: fixed;
         top: 20%;
-        left: 20%;
-        transform: translate(-50%, -50%);
-        background: white;
-        padding: 20px;
-        border-radius: 12px;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-        max-width: 800px;
+        left: 0;
+        right: 0;
         text-align: center;
         z-index: 10000;
+        padding: 0 20px;
       }
 
       #mali-error h2 {
-        color: #FF5722;
-        margin-top: 0;
-        font-size: 26px;
+        color: white;
+        margin: 0 0 20px 0;
+        font-size: 24px;
       }
 
       #mali-error p {
-        color: #333;
+        color: white;
         line-height: 1.6;
-        margin: 20px 0;
+        margin: 15px auto;
+        max-width: 600px;
       }
 
       #mali-error a {
         display: inline-block;
-        background-color: #4CAF50;
-        color: white;
-        padding: 12px 26px;
-        text-decoration: none;
-        border-radius: 6px;
+        color: #4CAF50;
+        text-decoration: underline;
         margin-top: 10px;
         font-weight: bold;
-        transition: background-color 0.3s;
       }
 
       #mali-error a:hover {
-        background-color: #45a049;
+        color: #66BB6A;
       }
 
       /* 컴팩트 모드 스타일 */
@@ -168,7 +161,7 @@
   </head>
   <body>
     <!-- Mali GPU Error Message -->
-    <div id="mali-error">
+     <div id="mali-error">
       <p>⚠️ This device doesn’t fully support WebGL 2.0.</p>
       <p>Please visit <b>https://fuze.io</b> on a desktop browser to customize your avatar.</p>
     </div>
@@ -383,12 +376,12 @@
         }
 
         var buildUrl = "Build";
-        var loaderUrl = buildUrl + "/web.loader.js";
+        var loaderUrl = buildUrl + "/{{{ LOADER_FILENAME }}}";
         var config = {
           arguments: [],
-          dataUrl: buildUrl + "/web.data",
-          frameworkUrl: buildUrl + "/web.framework.js",
-          codeUrl: buildUrl + "/web.wasm",
+          dataUrl: buildUrl + "/{{{ DATA_FILENAME }}}",
+          frameworkUrl: buildUrl + "/{{{ FRAMEWORK_FILENAME }}}",
+          codeUrl: buildUrl + "/{{{ CODE_FILENAME }}}",
           streamingAssetsUrl: "StreamingAssets",
           companyName: "PM-Studios",
           productName: "FUZE",

@@ -183,8 +183,8 @@
       <div class="control-panel">
         <div class="input-group">
           <input type="number" id="user-id-input" value="5681" min="1" max="999999" placeholder="User ID">
-          <button class="control-button" onclick="setUserId()">Set User ID</button>
-          <button id="setmine-button" class="control-button toggle-button" onclick="toggleSetMine()">SetMine: true</button>
+          <button class="control-button" onclick="setUserId()">Load Avatar - red</button>
+		  <button class="control-button" onclick="setUserId2()">Load Avatar - blue</button>
         </div>
       </div>
     </div>
@@ -314,6 +314,35 @@
             button.disabled = false;
           }, 1000);
         }
+		
+		function setUserId2() {
+          if (!isLoaded || !unityInstance) {
+            alert("Unity가 아직 로드되지 않았습니다.");
+            return;
+          }
+
+          var userIdInput = document.getElementById("user-id-input");
+          var userId = parseInt(userIdInput.value);
+
+          if (isNaN(userId) || userId < 1) {
+            alert("유효한 User ID를 입력해주세요 (1 이상의 숫자)");
+            return;
+          }
+
+          console.log("Setting User ID:", userId);
+          unityInstance.SendMessage("System", "LoadMineAvatar_ForDev2", userId);
+          
+          // 성공 메시지 표시
+          var button = event.target;
+          var originalText = button.textContent;
+          button.textContent = "설정됨!";
+          button.disabled = true;
+          
+          setTimeout(() => {
+            button.textContent = originalText;
+            button.disabled = false;
+          }, 1000);
+        }
 
         // SetMine 토글 함수
         function toggleSetMine() {
@@ -380,9 +409,9 @@
         var loaderUrl = buildUrl + "/web.loader.js";
         var config = {
           arguments: [],
-          dataUrl: buildUrl + "/web.data",
-          frameworkUrl: buildUrl + "/web.framework.js",
-          codeUrl: buildUrl + "/web.wasm",
+          dataUrl: buildUrl + "/web.data.br",
+          frameworkUrl: buildUrl + "/web.framework.js.br",
+          codeUrl: buildUrl + "/web.wasm.br",
           streamingAssetsUrl: "StreamingAssets",
           companyName: "PM-Studios",
           productName: "FUZE",
